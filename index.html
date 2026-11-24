@@ -49,7 +49,8 @@
 
   function claudeUrl(conv) {
     var link = 'https://mail.missiveapp.com/#inbox/conversations/' + conv.id;
-    var q = (commandInput.value.trim() || "Kør mail-opgave på denne tråd:") + ' ' + link;
+    var subject = (conv.subject || '').replace(/\s+/g, ' ').trim();
+    var q = (subject ? subject + '\n\n' : '') + (commandInput.value.trim() || "Kør mail-opgave på denne tråd:") + ' ' + link;
     var url = 'claude://code/new?q=' + encodeURIComponent(q);
     var folder = folderInput.value.trim();
     if (folder) url += '&folder=' + encodeURIComponent(folder);
