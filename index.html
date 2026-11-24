@@ -44,7 +44,7 @@
 
   Promise.all([Missive.storeGet('folder'), Missive.storeGet('command')]).then(function (v) {
     if (v[0]) folderInput.value = v[0];
-    if (v[1]) commandInput.value = v[1];
+    if (v[1] && v[1].charAt(0) !== '/') commandInput.value = v[1];
   }).catch(function () {});
 
   function claudeUrl(conv) {
