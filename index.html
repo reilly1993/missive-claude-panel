@@ -21,7 +21,7 @@
 
   <details>
     <summary>Indstillinger</summary>
-    <label>Mappe Claude skal arbejde i (fuld sti)
+    <label>Mappe (valgfri; tom = den mappe Claude-appen sidst brugte, uden bekræftelse hver gang)
       <input id="folder" placeholder="/Users/…/promte-app">
     </label>
     <label>Kommando
@@ -58,12 +58,6 @@
 
   function start() {
     if (!current) { Missive.alert({ title: 'Vælg en tråd først' }); return; }
-    if (!folderInput.value.trim()) {
-      document.querySelector('details').open = true;
-      folderInput.focus();
-      Missive.alert({ title: 'Angiv mappen under Indstillinger først' });
-      return;
-    }
     Missive.openURL(claudeUrl(current));
   }
   startBtn.addEventListener('click', start);
