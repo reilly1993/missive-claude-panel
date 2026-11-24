@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude</title>
+<link rel="stylesheet" href="https://integrations.missiveapp.com/missive.css">
+<script src="https://integrations.missiveapp.com/missive.js"></script>
+<style>
+  body { font: 14px -apple-system, system-ui, sans-serif; padding: 12px; color: var(--missive-text-color-a, #222); }
+  button { width: 100%; padding: 10px; font-size: 15px; border: 0; border-radius: 6px; background: #d97757; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .muted { color: #888; font-size: 12px; margin-top: 8px; word-break: break-all; }
+  details { margin-top: 16px; }
+  input { width: 100%; box-sizing: border-box; padding: 6px; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <button id="start" disabled>Start Claude på tråden</button>
+  <div class="muted" id="subject">Vælg en tråd</div>
+
+  <details>
+    <summary>Indstillinger</summary>
+    <label>Mappe Claude skal arbejde i (fuld sti)
+      <input id="folder" placeholder="/Users/…/promte-app">
+    </label>
+    <label>Kommando
+      <input id="command" value="/mail-opgave">
+    </label>
+  </details>
+
+<script>
+  var current = null;
+  var startBtn = document.getElementById('start');
+  var folderInput = document.getElementById('folder');
+  var commandInput = document.getElementById('command');
+
+  function save() {
+    Missive.storeSet('folder', folderInput.value.trim());
+    Missive.storeSet('command', commandInput.value.trim());
+  }
+  folderInput.addEventListener('change', save);
+  commandInput.addEventListener('change', save);
+
+  Promise.all([Missive.storeGet('folder'), Missive.storeGet('command')]).then(function (v) {
+    if (v[0]) folderInput.value = v[0];
+    if (v[1]) commandInput.value = v[1];
+  }).catch(function () {});
+
+  function claudeUrl(conv) {
+    var link = 'https://mail.missiveapp.com/#inbox/conversations/' + conv.id;
+    var q = (commandInput.value.trim() || '/mail-opgave') + ' ' + link;
+    var url = 'claude://code/new?q=' + encodeURIComponent(q);
+    var folder = folderInput.value.trim();
+    if (folder) url += '&folder=' + encodeURIComponent(folder);
+    return url;
+  }
+
+  function start() {
+    if (!current) { Missive.alert({ title: 'Vælg en tråd først' }); return; }
+    if (!folderInput.value.trim()) {
+      document.querySelector('details').open = true;
+      folderInput.focus();
+      Missive.alert({ title: 'Angiv mappen under Indstillinger først' });
+      return;
+    }
+    Missive.openURL(claudeUrl(current));
+  }
+  startBtn.addEventListener('click', start);
+
+  Missive.on('change:conversations', function (ids) {
+    if (!ids || ids.length !== 1) {
+      current = null; startBtn.disabled = true;
+      document.getElementById('subject').textContent = 'Vælg én tråd';
+      return;
+    }
+    Missive.fetchConversations(ids).then(function (convs) {
+      current = convs[0];
+      startBtn.disabled = false;
+      document.getElementById('subject').textContent = current.subject || '(intet emne)';
+    });
+  }, { retroactive: true });
+
+  Missive.setActions([{
+    label: 'Start Claude på tråden',
+    emoji: '🤖',
+    contexts: ['command_bar', 'conversation'],
+    callback: start
+  }]);
+</script>
+</body>
+</html>
