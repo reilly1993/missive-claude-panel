@@ -86,10 +86,26 @@
   }
   startNew.addEventListener('click', function (e) { e.preventDefault(); startFresh(); });
 
+  // Copy inside the click itself: the old execCommand path works in iframes without extra permissions.
+  function copyText(text) {
+    var ok = false;
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) {}
+    if (!ok) {
+      try { Missive.writeToClipboard(text); } catch (e) {}
+      try { navigator.clipboard.writeText(text); } catch (e) {}
+    }
+  }
+
   function start() {
     if (existingSession) {
       var msg = 'Der er kommet nyt i tråden. Læs det, og fortsæt mail-opgave.';
-      try { if (Missive.writeToClipboard) Missive.writeToClipboard(msg); else navigator.clipboard.writeText(msg); } catch (e) {}
+      copyText(msg);
       var url = existingSession;
       setTimeout(function () { Missive.openURL(url); }, 400);
       return;
