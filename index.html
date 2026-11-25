@@ -16,7 +16,7 @@
 </style>
 </head>
 <body>
-  <button id="start" disabled>Start Claude på tråden</button>
+  <button id="start" disabled>Claude på tråden</button>
   <div class="muted" id="subject">Vælg en tråd</div>
 
   <details>
@@ -77,7 +77,7 @@
   }, { retroactive: true });
 
   Missive.setActions([{
-    label: 'Start Claude på tråden',
+    label: "Claude på tråden",
     emoji: '🤖',
     contexts: ['command_bar', 'conversation'],
     callback: start
