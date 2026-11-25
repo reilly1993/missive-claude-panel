@@ -90,7 +90,8 @@
     if (existingSession) {
       var msg = 'Der er kommet nyt i tråden. Læs det, og fortsæt mail-opgave.';
       try { if (Missive.writeToClipboard) Missive.writeToClipboard(msg); else navigator.clipboard.writeText(msg); } catch (e) {}
-      Missive.openURL(existingSession);
+      var url = existingSession;
+      setTimeout(function () { Missive.openURL(url); }, 400);
       return;
     }
     startFresh();
