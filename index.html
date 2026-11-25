@@ -17,6 +17,7 @@
 </head>
 <body>
   <button id="start" disabled>Claude på tråden</button>
+  <div class="muted" id="hint" style="display:none">Beskeden "der er kommet nyt" ligger i udklipsholderen: ⌘V og Enter.</div>
   <div class="muted"><a href="#" id="startNew" style="display:none">Start en ny session i stedet</a></div>
   <div class="muted" id="subject">Vælg en tråd</div>
 
@@ -80,12 +81,18 @@
   }
   function updateButton() {
     startBtn.textContent = existingSession ? 'Fortsæt i Claude' : 'Claude på tråden';
+    document.getElementById('hint').style.display = existingSession ? 'block' : 'none';
     startNew.style.display = existingSession ? 'inline' : 'none';
   }
   startNew.addEventListener('click', function (e) { e.preventDefault(); startFresh(); });
 
   function start() {
-    if (existingSession) { Missive.openURL(existingSession); return; }
+    if (existingSession) {
+      var msg = 'Der er kommet nyt i tråden. Læs det, og fortsæt mail-opgave.';
+      try { if (Missive.writeToClipboard) Missive.writeToClipboard(msg); else navigator.clipboard.writeText(msg); } catch (e) {}
+      Missive.openURL(existingSession);
+      return;
+    }
     startFresh();
   }
   function startFresh() {
