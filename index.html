@@ -22,9 +22,6 @@
 
   <details>
     <summary>Indstillinger</summary>
-    <label>Mappe (valgfri; tom = den mappe Claude-appen sidst brugte, uden bekræftelse hver gang)
-      <input id="folder" placeholder="/Users/…/promte-app">
-    </label>
     <label>Missive API-token (valgfri; så kan knappen åbne trådens tidligere Claude-session)
       <input id="token" type="password" placeholder="Fra Missive: Indstillinger → API">
     </label>
@@ -36,25 +33,21 @@
 <script>
   var current = null;
   var startBtn = document.getElementById('start');
-  var folderInput = document.getElementById('folder');
   var commandInput = document.getElementById('command');
   var tokenInput = document.getElementById('token');
   var startNew = document.getElementById('startNew');
   var existingSession = null;
 
   function save() {
-    Missive.storeSet('folder', folderInput.value.trim());
     Missive.storeSet('command', commandInput.value.trim());
     Missive.storeSet('token', tokenInput.value.trim());
     if (current) findSession(current.id);
   }
-  folderInput.addEventListener('change', save);
   commandInput.addEventListener('change', save);
   tokenInput.addEventListener('change', save);
 
   Promise.all([Missive.storeGet('folder'), Missive.storeGet('command'), Missive.storeGet('token')]).then(function (v) {
     if (v[2]) tokenInput.value = v[2];
-    if (v[0]) folderInput.value = v[0];
     if (v[1] && v[1].charAt(0) !== '/') commandInput.value = v[1];
   }).catch(function () {});
 
@@ -63,8 +56,6 @@
     var subject = (conv.subject || '').replace(/\s+/g, ' ').trim();
     var q = (subject ? subject + '\n\n' : '') + (commandInput.value.trim() || "Kør mail-opgave på denne tråd:") + ' ' + link;
     var url = 'claude://code/new?q=' + encodeURIComponent(q);
-    var folder = folderInput.value.trim();
-    if (folder) url += '&folder=' + encodeURIComponent(folder);
     return url;
   }
 
