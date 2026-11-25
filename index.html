@@ -17,12 +17,16 @@
 </head>
 <body>
   <button id="start" disabled>Claude på tråden</button>
+  <div class="muted"><a href="#" id="startNew" style="display:none">Start en ny session i stedet</a></div>
   <div class="muted" id="subject">Vælg en tråd</div>
 
   <details>
     <summary>Indstillinger</summary>
     <label>Mappe (valgfri; tom = den mappe Claude-appen sidst brugte, uden bekræftelse hver gang)
       <input id="folder" placeholder="/Users/…/promte-app">
+    </label>
+    <label>Missive API-token (valgfri; så kan knappen åbne trådens tidligere Claude-session)
+      <input id="token" type="password" placeholder="Fra Missive: Indstillinger → API">
     </label>
     <label>Kommando
       <input id="command" value="Kør mail-opgave på denne tråd:">
@@ -34,15 +38,22 @@
   var startBtn = document.getElementById('start');
   var folderInput = document.getElementById('folder');
   var commandInput = document.getElementById('command');
+  var tokenInput = document.getElementById('token');
+  var startNew = document.getElementById('startNew');
+  var existingSession = null;
 
   function save() {
     Missive.storeSet('folder', folderInput.value.trim());
     Missive.storeSet('command', commandInput.value.trim());
+    Missive.storeSet('token', tokenInput.value.trim());
+    if (current) findSession(current.id);
   }
   folderInput.addEventListener('change', save);
   commandInput.addEventListener('change', save);
+  tokenInput.addEventListener('change', save);
 
-  Promise.all([Missive.storeGet('folder'), Missive.storeGet('command')]).then(function (v) {
+  Promise.all([Missive.storeGet('folder'), Missive.storeGet('command'), Missive.storeGet('token')]).then(function (v) {
+    if (v[2]) tokenInput.value = v[2];
     if (v[0]) folderInput.value = v[0];
     if (v[1] && v[1].charAt(0) !== '/') commandInput.value = v[1];
   }).catch(function () {});
@@ -57,7 +68,36 @@
     return url;
   }
 
+  // Look for the newest Claude session link in this thread's notes (needs the user's own API token).
+  function findSession(convId) {
+    existingSession = null; updateButton();
+    var token = tokenInput.value.trim();
+    if (!token) return;
+    fetch('https://public.missiveapp.com/v1/conversations/' + convId + '/posts?limit=10', { headers: { Authorization: 'Bearer ' + token } })
+      .then(function (r) { return r.ok ? r.json() : { posts: [] }; })
+      .then(function (d) {
+        if (!current || current.id !== convId) return;
+        var re = /claude:\/\/claude\.ai\/epitaxy\/local_[A-Za-z0-9-]+/;
+        (d.posts || []).some(function (p) {
+          var text = JSON.stringify(p);
+          var m = text.match(re);
+          if (m) { existingSession = m[0]; return true; }
+          return false;
+        });
+        updateButton();
+      }).catch(function () {});
+  }
+  function updateButton() {
+    startBtn.textContent = existingSession ? 'Fortsæt i Claude' : 'Claude på tråden';
+    startNew.style.display = existingSession ? 'inline' : 'none';
+  }
+  startNew.addEventListener('click', function (e) { e.preventDefault(); startFresh(); });
+
   function start() {
+    if (existingSession) { Missive.openURL(existingSession); return; }
+    startFresh();
+  }
+  function startFresh() {
     if (!current) { Missive.alert({ title: 'Vælg en tråd først' }); return; }
     Missive.openURL(claudeUrl(current));
   }
@@ -72,6 +112,7 @@
     Missive.fetchConversations(ids).then(function (convs) {
       current = convs[0];
       startBtn.disabled = false;
+      findSession(current.id);
       document.getElementById('subject').textContent = current.subject || '(intet emne)';
     });
   }, { retroactive: true });
